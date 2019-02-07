@@ -22,6 +22,7 @@ float random1( vec2 p , vec2 seed) {
 }
 
 
+
 float interpNoise2D(float x, float y) {
     float intX = floor(x);
     float intY = floor(y);
@@ -86,9 +87,9 @@ float worley(float x, float y, float scale) {
 
 
 // reference from class slides
-float triangleWave( float x, float freq, float amp)
-{
-    return floor(abs(mod((x*freq) , amp) - (0.5 * amp)));
+float triangleWave(float x, float freq, float amp) {
+    float tri = floor(abs(mod(floor(x*freq), amp) - (0.5 * amp)));
+    return tri;
 }
 
 // a function that uses the NDC coordinates of the current fragment (i.e. its fs_Pos value) and projects a ray from that pixel.
@@ -121,10 +122,13 @@ float SDFblob(float sphere, float cube) {
     return (opSmoothIntersection(sphere, cube, 0.25));
 }
 
+
 float getMetaBlob(float s1, float s2, float s3, float s4, float s5, float s6, float s7)
 {
-    float k =1.2;
-	return -log(exp(-k*s1)+exp(-k*s2)+exp(-k*s3)+exp(-k*s4)+exp(-k*s5)+exp(-k*s6)+exp(-k*s7))/k;
+    float b =2.0;
+    float exponentTerm = (exp(-b*s1)+exp(-b*s2)+exp(-b*s3)+exp(-b*s4)+exp(-b*s5)+exp(-b*s6)+exp(-b*s7));
+    float result = -log(exponentTerm) / b;
+    return result;
 }
 
 //Sphere SDF
@@ -333,17 +337,14 @@ float rayMarch(vec3 rayDir, vec3 cameraOrigin)
     if (BVH(cameraOrigin, rayDir, cubes) > 50.0) {
         return 10000.0;
     }
-    int MAX_ITER = 50;
+    int INTERATIONS = 50;
 	float MAX_DIST = 50.0;
 
     float totalDist = 0.0;
-    float totalDist2 = 0.0;
 	vec3 pos = cameraOrigin;
-	float dist = EPSILON;
-    vec3 col = vec3(0.0);
-    float glow = 0.0;
+	float dist = 0.0;
 
-    for(int j = 0; j < MAX_ITER; j++)
+    for(int i = 0; i < INTERATIONS; i++)
 	{
 		dist = sceneSDF(pos);
 		totalDist = totalDist + dist;
@@ -397,7 +398,7 @@ void main() {
   if (t < 50.0){
     vec3 light1 = getShading(u_Eye + t * dir, vec3(5.0,10.0,-20.0), vec3(1.0,1.0,1.0), dir);
     vec3 light2 = getShading(u_Eye + t * dir, vec3(-20,10.0,5.0), vec3(0.5,0.4,0.1), dir);
-    vec3 light3 = getShading(u_Eye + t * dir, vec3(25.0,5.0,-5.0), vec3(0.7,0.3,0.1), dir);
+    vec3 light3 = getShading(u_Eye + t * dir, vec3(20.0,5.0,-8.0), vec3(0.7,0.3,0.1), dir);
     vec3 color = light1+light2+light3;
     out_Col = vec4(color , 1.0);
   } else {
