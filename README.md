@@ -1,89 +1,55 @@
-# CIS 566 Homework 2: Implicit Surfaces
+#Implicit Surfaces
 
-## Objective
-- Gain experience with signed distance functions
-- Experiment with animation curves
+### Chloe Le
+- https://chloele.com/
 
-## Base Code
-The code we have provided for this assignment features the following:
-- A square that spans the range [-1, 1] in X and Y that is rendered with a
-shader that does not apply a projection matrix to it, thus rendering it as the
-entirety of your screen
-- TypeScript code just like the code in homework 1 to set up a WebGL framework
-- Code that passes certain camera attributes (listed in the next section),
-the screen dimensions, and a time counter to the shader program.
+###Demo: 
+- http://www.chloele.com/implicit-surfaces/
 
-## Assignment Requirements
-- __(10 points)__ Modify the provided `flat-frag.glsl` to cast rays from a
-virtual camera. We have set up uniform variables in your shader that take in
-the eye position, reference point position, and up vector of the `Camera` in
-the provided TypeScript code, along with a uniform that stores the screen width
-and height. Using these uniform variables, and only these uniform variables,
-you must write a function that uses the NDC coordinates of the current fragment
-(i.e. its fs_Pos value) and projects a ray from that pixel. Refer to the [slides
-on ray casting](https://docs.google.com/presentation/d/e/2PACX-1vSN5ntJISgdOXOSNyoHimSVKblnPnL-Nywd6aRPI-XPucX9CeqzIEGTjFTwvmjYUgCglTqgvyP1CpxZ/pub?start=false&loop=false&delayms=60000&slide=id.g27215b64c6_0_107)
-from CIS 560 for reference on how to cast a ray without an explicit
-view-projection matrix. You'll have to compute your camera's Right vector based
-on the provided Up vector, Eye point, and Ref point. You can test your ray
-casting function by converting your ray directions to colors using the formula
-`color = 0.5 * (dir + vec3(1.0, 1.0, 1.0))`. If your screen looks like the
-following image, your rays are being cast correctly:
-![](rayDir.png)
-- __(70 points)__ Create and animate a scene using signed distance functions.
-The subject of your scene can be anything you like, provided your scene includes
-the following elements:
-  - The SDF combination operations Intersection, Subtraction, and Smooth Blend
-  - Raymarch optimization by way of bounding volumes around SDFs, arranged in
-  a Bounding Volume Hierarchy
-  - Animation of at least two scene attributes such as color, position, scale,
-  twist, rotation, texture, or anything else you can think of
-  - At least two functions mentioned in the Toolbox Functions slides used for
-  animation
-  - Procedural texturing using toolbox functions and/or noise functions
-  - Shading that involves surface normal computation
+Adjust the ring size, blob, and background color in the top right corner.
 
-- __(10 points)__ Add GUI elements via dat.GUI that allow the user to modify at
-least two different attributes of your scene.
+![](DEMO1.png) 
 
-- __(10 points)__ Following the specifications listed
-[here](https://github.com/pjcozzi/Articles/blob/master/CIS565/GitHubRepo/README.md),
-create your own README.md, renaming this file to INSTRUCTIONS.md. Don't worry
-about discussing runtime optimization for this project. Make sure your
-README contains the following information:
-  - Your name and PennKey
-  - Citation of any external resources you found helpful when implementing this
-  assignment.
-  - A link to your live github.io demo (refer to the pinned Piazza post on
-    how to make a live demo through github.io)
-  - An explanation of the techniques you used to generate your planet features.
-  Please be as detailed as you can; not only will this help you explain your work
-  to recruiters, but it helps us understand your project when we grade it!
+![](DEMO2.png)
 
-## Useful Links
-- [IQ's Article on SDFs](http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm)
-- [IQ's Article on Smooth Blending](http://www.iquilezles.org/www/articles/smin/smin.htm)
-- [IQ's Article on Useful Functions](http://www.iquilezles.org/www/articles/functions/functions.htm)
-- [Breakdown of Rendering an SDF Scene](http://www.iquilezles.org/www/material/nvscene2008/rwwtt.pdf)
+##References
 
 
-## Submission
-Commit and push to Github, then submit a link to your commit on Canvas. Remember
-to make your own README!
+I referenced articles on metaballs to create the blob-like effect:
+https://en.wikipedia.org/wiki/Metaballs
+http://paulbourke.net/geometry/implicitsurf/index.html
+
+For SDF functions and SDF normal calculations, I referenced Inigo Quilez:
+http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+http://iquilezles.org/www/articles/normalsSDF/normalsSDF.htm
+
+For ray casting and ray marching, I referenced [slides](https://docs.google.com/presentation/d/e/2PACX-1vSN5ntJISgdOXOSNyoHimSVKblnPnL-Nywd6aRPI-XPucX9CeqzIEGTjFTwvmjYUgCglTqgvyP1CpxZ/pub?start=false&loop=false&delayms=60000&slide=id.g27215b64c6_0_107
+) from UPenn's CIS460/560 course.
 
 ## Inspiration
-- [Alien Corridor](https://www.shadertoy.com/view/4slyRs)
-- [The Evolution of Motion](https://www.shadertoy.com/view/XlfGzH)
-- [Fractal Land](https://www.shadertoy.com/view/XsBXWt)
-- [Voxel Edges](https://www.shadertoy.com/view/4dfGzs)
-- [Snail](https://www.shadertoy.com/view/ld3Gz2)
-- [Cubescape](https://www.shadertoy.com/view/Msl3Rr)
-- [Journey Tribute](https://www.shadertoy.com/view/ldlcRf)
-- [Stormy Landscape](https://www.shadertoy.com/view/4ts3z2)
-- [Generators](https://www.shadertoy.com/view/Xtf3Rn)
+In class, we were shown a demo of red glass metaballs. I found that really intriguing, so I wish to re-create something similar with the blob effect. 
 
-## Extra Credit (20 points maximum)
-- __(5 - 20 pts)__ Do some research into more advanced shading techniques such
-as ambient occlusion, soft shadows, GGX materials, depth of field, volumetrics,
-etc. and implement one of them. The more complex your feature, the more points
-you'll earn.
-- __(? pts)__ Propose an extra feature of your own!
+## Implementation
+
+###Scene Geometry
+The scene is composed of SDFs such as sphere, round cube, and torus. The bottom plate-like flat cylinder is created by performing an intersection and then a smooth operation. The blob SDF consists of functions with exp and log (details linked in the reference section). The coefficient b in the blob function can be changed by the user to make the SDFs more/less sticky. 
+
+###Optimization
+Raymarch optimization is done by using bounding cubes arranged in a Bounding Volume Hierarchy. The bounding cubes are of struct Cube, and there are five total to form the parent-child relationships. Each of the bounding cubes consists of a min and max vec3. When testing for ray-cube intersection, I test against all x - y - z directions of the cube, and see if our ray casted hits the bounding cube. If so, we coutinue the ray march, else, we stop and assume the ray does not hit anything.
+
+Since scene geometry is blended in a blob and constantly evolving, the bounding boxes are not as tight on some shapes like the meta-cubes. 
+
+###Animation
+In the scene, cubes and the sphere are animated with u_Time (the cubes change position and sphere changes scale) , and the background texture is animate with a subtle expansion/contraction movement. 
+
+###Functions Used for Animation
+I used smoothstep for the "pumping" of the sphere, and a bunch of cosine and sine waves to create the smooth movement of the the cubes. I have the tirangle wave function in the code, and have tested cube movements using the triangle wave. However, I think the blob effect looks more nice with a smoother-movement, so I commented out the usage of the triangle-wave function. 
+
+###Texturing
+Texturing of the background is procedurally done using the Worley and FBM noise functions. I created a background color and a highlight color, then, I computed a texture map using the noise functions and calculated the background using 1.0-texture. 
+
+###Shading with Surface Normal Computation
+Surface normal computation of the SDF is done by using the forward and central differences technique. 
+This technique uses an offset in the positions directional components and normalize all components. 
+The lighting/shading of the surfaces uses a mix of ambient, diffuse, and phong. We pass in the light direction, color, the point, and ray direction to compute the corresponding light from the three. 
+I used a total of three lights in the scene. 

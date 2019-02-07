@@ -10,6 +10,7 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
+  blob_effect: 1.2,
   ring_size: 2.5,
   mountainCount: 40.0,
   //'Load Scene': loadScene, // A function pointer, essentially
@@ -26,6 +27,7 @@ let prevRingSize: number = 2.5;
 let prevR = 250.0;
 let prevG = 230.0;
 let prevB = 178.0;
+let prevBlob = 1.2;
 
 
 function loadScene() {
@@ -59,6 +61,7 @@ function main() {
   // Add controls to the gui
   const gui = new DAT.GUI();
   gui.add(controls, 'ring_size', 1.0, 6.0).step(0.1);
+  gui.add(controls, 'blob_effect', 0.5, 2.5).step(0.1);
   var colorFolder = gui.addFolder('Change Color');
   colorFolder.add(controls, "R", 0, 255).step(1);
   colorFolder.add(controls, "G", 0, 255).step(1);
@@ -90,6 +93,7 @@ function main() {
   ]);
   flat.setRingSize(prevRingSize);
   flat.setColor(vec3.fromValues(prevR / 255.0, prevG / 255.0, prevB / 255.0));
+  flat.setBlob(prevBlob);
 
   function processKeyPresses() {
     // Use this if you wish
@@ -112,6 +116,13 @@ function main() {
       prevRingSize = controls.ring_size;
       flat.setRingSize(prevRingSize);
     }
+
+    if(controls.blob_effect != prevBlob)
+    {
+      prevBlob = controls.blob_effect;
+      flat.setBlob(prevBlob);
+    }
+
 
     if(controls.R != prevR) {
       prevR = controls.R;

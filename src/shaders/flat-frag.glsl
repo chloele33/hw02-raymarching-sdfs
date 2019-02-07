@@ -6,6 +6,8 @@ uniform vec2 u_Dimensions;
 uniform float u_Time;
 uniform float u_RingSize;
 uniform vec3 u_Color;
+uniform float u_Blob;
+
 
 in vec2 fs_Pos;
 out vec4 out_Col;
@@ -125,7 +127,7 @@ float SDFblob(float sphere, float cube) {
 
 float getMetaBlob(float s1, float s2, float s3, float s4, float s5, float s6, float s7)
 {
-    float b =2.0;
+    float b =u_Blob;
     float exponentTerm = (exp(-b*s1)+exp(-b*s2)+exp(-b*s3)+exp(-b*s4)+exp(-b*s5)+exp(-b*s6)+exp(-b*s7));
     float result = -log(exponentTerm) / b;
     return result;
@@ -293,7 +295,7 @@ Cube sphereBB() {
 
 Cube metaCubesBB() {
 	Cube cube;
-	cube.min = vec3(-3.0, -6.0, -3.0);
+	cube.min = vec3(-3.0, -8.0, -3.0);
 	cube.max = vec3(3.0, 8.0, 3.0);
 	return cube;
 }
@@ -361,12 +363,12 @@ float rayMarch(vec3 rayDir, vec3 cameraOrigin)
 
 // calculate normals
 vec3 getNormal(vec3 p) {
-   vec3 normal = normalize(vec3(
-        sceneSDF(vec3(p.x + EPSILON, p.y, p.z)) - sceneSDF(vec3(p.x - EPSILON, p.y, p.z)),
-        sceneSDF(vec3(p.x, p.y + EPSILON, p.z)) - sceneSDF(vec3(p.x, p.y - EPSILON, p.z)),
-        sceneSDF(vec3(p.x, p.y, p.z  + EPSILON)) - sceneSDF(vec3(p.x, p.y, p.z - EPSILON))
-    ));
-    float eps = 0.0001; // or some other value
+//   vec3 normal = normalize(vec3(
+//        sceneSDF(vec3(p.x + EPSILON, p.y, p.z)) - sceneSDF(vec3(p.x - EPSILON, p.y, p.z)),
+//        sceneSDF(vec3(p.x, p.y + EPSILON, p.z)) - sceneSDF(vec3(p.x, p.y - EPSILON, p.z)),
+//        sceneSDF(vec3(p.x, p.y, p.z  + EPSILON)) - sceneSDF(vec3(p.x, p.y, p.z - EPSILON))
+//    ));
+    float eps = 0.0001;
      vec2 h = vec2(eps,0);
     return normalize( vec3(sceneSDF(p+h.xyy) - sceneSDF(p-h.xyy),
                            sceneSDF(p+h.yxy) - sceneSDF(p-h.yxy),
