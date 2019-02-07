@@ -29,6 +29,8 @@ class ShaderProgram {
   unifUp: WebGLUniformLocation;
   unifDimensions: WebGLUniformLocation;
   unifTime: WebGLUniformLocation;
+  unifRingSize: WebGLUniformLocation;
+  unifCol: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
@@ -47,12 +49,22 @@ class ShaderProgram {
     this.unifUp   = gl.getUniformLocation(this.prog, "u_Up");
     this.unifDimensions   = gl.getUniformLocation(this.prog, "u_Dimensions");
     this.unifTime   = gl.getUniformLocation(this.prog, "u_Time");
+    this.unifRingSize = gl.getUniformLocation(this.prog, "u_RingSize");
+    this.unifCol = gl.getUniformLocation(this.prog, "u_Color");
   }
 
   use() {
     if (activeProgram !== this.prog) {
       gl.useProgram(this.prog);
       activeProgram = this.prog;
+    }
+  }
+
+  setRingSize(s: number) {
+    this.use();
+    if (this.unifRingSize !== -1)
+    {
+      gl.uniform1f(this.unifRingSize, s);
     }
   }
 
@@ -66,6 +78,13 @@ class ShaderProgram {
     }
     if(this.unifUp !== -1) {
       gl.uniform3f(this.unifUp, up[0], up[1], up[2]);
+    }
+  }
+
+  setColor(col: vec3) {
+    this.use();
+    if(this.unifCol !== -1) {
+      gl.uniform3f(this.unifCol, col[0], col[1], col[2]);
     }
   }
 

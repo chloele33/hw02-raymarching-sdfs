@@ -4,6 +4,8 @@ precision highp float;
 uniform vec3 u_Eye, u_Ref, u_Up;
 uniform vec2 u_Dimensions;
 uniform float u_Time;
+uniform float u_RingSize;
+uniform vec3 u_Color;
 
 in vec2 fs_Pos;
 out vec4 out_Col;
@@ -18,6 +20,7 @@ float random1( vec3 p , vec3 seed) {
 float random1( vec2 p , vec2 seed) {
   return fract(sin(dot(p + seed, vec2(127.1, 311.7))) * 43758.5453);
 }
+
 
 float interpNoise2D(float x, float y) {
     float intX = floor(x);
@@ -82,6 +85,12 @@ float worley(float x, float y, float scale) {
 }
 
 
+// reference from class slides
+float triangleWave( float x, float freq, float amp)
+{
+    return floor(abs(mod((x*freq) , amp) - (0.5 * amp)));
+}
+
 // a function that uses the NDC coordinates of the current fragment (i.e. its fs_Pos value) and projects a ray from that pixel.
 vec3 castRay(vec3 eye) {
     float len = length(u_Ref - eye);
@@ -142,16 +151,17 @@ float roundBoxSDF( vec3 p, vec3 b, float r )
 float sceneSDF(vec3 p)
 {
 float rand = random1(vec3(1.0,1.0,1.0), vec3(1.0,1.0,1.0));
+  float pulse = smoothstep(1.0, -1.0,  0.5 * (sin(u_Time / 15.0) + 1.0));
 
   float roundBox1 = roundBoxSDF(p + vec3(4.0 * cos(u_Time* 0.04) , 6.0 * cos(u_Time* 0.02), 1.0* cos(u_Time* 0.01)), vec3(0.5, 0.5, 0.5), 0.5);
   float roundBox2 = roundBoxSDF(p + vec3(4.0 * cos(u_Time* 0.03), 6.0 * cos(u_Time* 0.01), 1.0 * cos(u_Time* 0.01)), vec3(0.5, 0.5, 0.5), 0.5);
   float roundBox3 = roundBoxSDF(p + vec3(4.0 * sin(u_Time* 0.02), 6.0 * sin(u_Time* 0.02), 1.0 * sin(u_Time* 0.01)), vec3(0.5, 0.5, 0.5), 0.5);
   float roundBox4 = roundBoxSDF(p + vec3(4.0 * sin(u_Time* 0.04) , 6.0 * sin(u_Time* 0.01), 1.0 * sin(u_Time* 0.01)), vec3(0.5, 0.5, 0.5), 0.5);
-  float torus1 = torusSDF(p + vec3(0.0, -2.0, 0.0) , vec2(6.0, 0.7));
-  float sphere1 = sphereSDF(p + vec3(0.0, 4.0, 0.0), 4.0, vec3(1.0, 1.0, 1.0));
+  float torus1 = torusSDF(p + vec3(0.0, -2.0, 0.0) , vec2(u_RingSize, 0.7));
+  float sphere1 = sphereSDF(p + vec3(0.0, 4.0, 0.0),  4.0, vec3(1.0, 1.0, 1.0));
   float cube1 = roundBoxSDF(p + vec3(0.0, 4.0, 0.0), vec3(4.0, 0.01, 4.0), 0.5);
   float flatCyn = SDFblob(sphere1, cube1);
-  float sphere2 = sphereSDF(p + vec3(0.0, -7.0, 0.0), 1.0, vec3(1.0, 1.0, 1.0));
+  float sphere2 = sphereSDF(p + vec3(0.0, -7.0, 0.0), pulse* 1.0, vec3(1.0, 1.0, 1.0));
 
 
   //float torus1 = roundBoxSDF(p, vec3(1.0, 1.0, 1.0), 0.8);
@@ -392,8 +402,8 @@ void main() {
     out_Col = vec4(color , 1.0);
   } else {
      vec3 background = vec3(0.05, 0.03, 0.0);
-    vec3 highlight = vec3(0.98, 0.90, 0.70);
-    float textureMap = worley(fs_Pos.x * 80.0, fs_Pos.y * 60.0 ,2.5 * sin(u_Time / 50.0)) - 0.15 * fbm(fs_Pos.x, fs_Pos.y);
+    vec3 highlight = u_Color;
+    float textureMap = worley(fs_Pos.x * 80.0, fs_Pos.y * 60.0 ,5.0 * sin(u_Time / 80.0)) - 0.15 * fbm(fs_Pos.x, fs_Pos.y);
 
     vec3 backgroundCol = textureMap * (highlight) + (1.0 - textureMap) * (background);
 
