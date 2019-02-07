@@ -8,11 +8,77 @@ uniform float u_Time;
 in vec2 fs_Pos;
 out vec4 out_Col;
 
-float FOVY = radians(90.0);
+float FOVY = radians(45.0);
 float EPSILON = 0.02;
 
 float random1( vec3 p , vec3 seed) {
   return fract(sin(dot(p + seed, vec3(987.654, 123.456, 531.975))) * 85734.3545);
+}
+
+float random1( vec2 p , vec2 seed) {
+  return fract(sin(dot(p + seed, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float interpNoise2D(float x, float y) {
+    float intX = floor(x);
+    float intY = floor(y);
+    float fractX = fract(x);
+    float fractY = fract(y);
+
+    float v1 = random1(vec2(intX, intY), vec2(1.0, 1.0));
+    float v2 = random1(vec2(intX + 1.0, intY), vec2(1.0, 1.0));
+    float v3 = random1(vec2(intX, intY + 1.0), vec2(1.0, 1.0));
+    float v4 = random1(vec2(intX + 1.0, intY + 1.0), vec2(1.0, 1.0));
+
+    float i1 = mix(v1, v2, fractX);
+    float i2 = mix(v3, v4, fractX);
+    return mix(i1, i2, fractY);
+}
+
+float fbm(float x, float y) {
+  float total = 0.f;
+  float persistence = 0.5f;
+  int octaves = 8;
+  float roughness = 1.0;
+
+  vec2 pos = vec2(x, y);
+  vec2 shift = vec2(100.0);
+
+  mat2 rot = mat2(cos(0.5), sin(0.5),
+                      -sin(0.5), cos(0.50));
+
+  for (int i = 0; i < octaves; i++) {
+    float freq = pow(2.0, float(i));
+    float amp = pow(persistence, float(i));
+
+    pos = rot * pos * 1.0 + shift;
+
+    total += abs(interpNoise2D( pos.x / 100.0  * freq, pos.y / 20.0 * freq)) * amp * roughness;
+    roughness *= interpNoise2D(pos.x / 5.0  * freq, pos.y / 5.0 * freq);
+  }
+  return  total;
+}
+
+float worley(float x, float y, float scale) {
+    float scale_invert = abs(80.0 - scale);
+    vec2 pos = vec2(x/scale_invert, y/scale_invert);
+
+    float m_dist = 40.f;  // minimun distance
+    vec2 m_point = vec2(0.f, 0.f);       // minimum point
+
+    for (int j=-1; j<=1; j++ ) {
+        for (int i=-1; i<=1; i++ ) {
+            vec2 neighbor = vec2(floor(pos.x) + float(j), floor(pos.y) + float(i));
+            vec2 point = neighbor + random1(neighbor, vec2(1.f, 1.f));
+            float dist = distance(pos, point);
+
+            if( dist < m_dist ) {
+                m_dist = dist;
+                m_point = point;
+            }
+        }
+    }
+    return m_dist;
 }
 
 
@@ -32,11 +98,24 @@ vec3 castRay(vec3 eye) {
     return ray_dir;
 }
 
+float opSubtraction( float d1, float d2 ) { return max(-d1,d2); }
 
-float getMetaBlob(float s1, float s2, float s3, float s4, float s5, float s6)
+float opIntersection( float d1, float d2 ) { return max(d1,d2); }
+
+float opSmoothIntersection( float d1, float d2, float k )
+{
+    float h = clamp( 0.5 - 0.5*(d2-d1)/k, 0.0, 1.0 );
+    return mix( d2, d1, h ) + k*h*(1.0-h);
+    }
+
+float SDFblob(float sphere, float cube) {
+    return (opSmoothIntersection(sphere, cube, 0.25));
+}
+
+float getMetaBlob(float s1, float s2, float s3, float s4, float s5, float s6, float s7)
 {
     float k =1.2;
-	return -log(exp(-k*s1)+exp(-k*s2)+exp(-k*s3)+exp(-k*s4)+exp(-k*s5)+exp(-k*s6))/k;
+	return -log(exp(-k*s1)+exp(-k*s2)+exp(-k*s3)+exp(-k*s4)+exp(-k*s5)+exp(-k*s6)+exp(-k*s7))/k;
 }
 
 //Sphere SDF
@@ -68,12 +147,17 @@ float rand = random1(vec3(1.0,1.0,1.0), vec3(1.0,1.0,1.0));
   float roundBox2 = roundBoxSDF(p + vec3(4.0 * cos(u_Time* 0.03), 6.0 * cos(u_Time* 0.01), 1.0 * cos(u_Time* 0.01)), vec3(0.5, 0.5, 0.5), 0.5);
   float roundBox3 = roundBoxSDF(p + vec3(4.0 * sin(u_Time* 0.02), 6.0 * sin(u_Time* 0.02), 1.0 * sin(u_Time* 0.01)), vec3(0.5, 0.5, 0.5), 0.5);
   float roundBox4 = roundBoxSDF(p + vec3(4.0 * sin(u_Time* 0.04) , 6.0 * sin(u_Time* 0.01), 1.0 * sin(u_Time* 0.01)), vec3(0.5, 0.5, 0.5), 0.5);
-  float torus1 = torusSDF(p + vec3(0.0, -4.0, 0.0) , vec2(6.0, 0.5));
-  float sphere1 = sphereSDF(p + vec3(0.0, 4.0, 0.0), 2.0, vec3(1.0, 1.0, 1.0));
+  float torus1 = torusSDF(p + vec3(0.0, -2.0, 0.0) , vec2(6.0, 0.7));
+  float sphere1 = sphereSDF(p + vec3(0.0, 4.0, 0.0), 4.0, vec3(1.0, 1.0, 1.0));
+  float cube1 = roundBoxSDF(p + vec3(0.0, 4.0, 0.0), vec3(4.0, 0.01, 4.0), 0.5);
+  float flatCyn = SDFblob(sphere1, cube1);
+  float sphere2 = sphereSDF(p + vec3(0.0, -7.0, 0.0), 1.0, vec3(1.0, 1.0, 1.0));
+
+
   //float torus1 = roundBoxSDF(p, vec3(1.0, 1.0, 1.0), 0.8);
   //float sphere1 = roundBoxSDF(p, vec3(1.0, 1.0, 1.0), 0.8);
 
-  float meta = getMetaBlob(roundBox1, roundBox2, roundBox3, roundBox4, torus1, sphere1);
+  float meta = getMetaBlob(roundBox1, roundBox2, roundBox3, roundBox4, torus1, flatCyn, sphere2);
   return meta;
 }
 
@@ -181,15 +265,15 @@ float cubeIntersect(vec3 raydir, vec3 origin, Cube cube) {
 
 Cube sceneBB() {
 	Cube cube;
-	cube.min = vec3(-6.0, -6.0, -6.0);
-	cube.max = vec3(6.0, 8.0, 6.0);
+	cube.min = vec3(-7.0, -8.0, -7.0);
+	cube.max = vec3(7.0, 8.0, 7.0);
 	return cube;
 }
 
 Cube sphereBB() {
 	Cube cube;
-	cube.min = vec3(-1.0, -5.0, -1.0);
-	cube.max = vec3(1.0, 8.0, 1.0);
+	cube.min = vec3(-1.0, -8.0, -1.0);
+	cube.max = vec3(1.0, -6.0, 1.0);
 	return cube;
 }
 
@@ -202,13 +286,21 @@ Cube metaCubesBB() {
 
 Cube torusBB() {
     Cube cube;
-	cube.min = vec3(-6.0, -6.0, -6.0);
-	cube.max = vec3(6.0, -2.0, 6.0);
+	cube.min = vec3(-7.0, -7.0, -7.0);
+	cube.max = vec3(7.0, -2.0, 7.0);
 	return cube;
 
 }
 
-float BVH(vec3 origin, vec3 dir, Cube cubes[4]) {
+Cube flatCynBB() {
+    Cube cube;
+	cube.min = vec3(-4.0, 6.0, -4.0);
+	cube.max = vec3(4.0, 4.0, 4.0);
+	return cube;
+
+}
+
+float BVH(vec3 origin, vec3 dir, Cube cubes[5]) {
     float currT = 999999.0;
     for (int i = 0; i < cubes.length(); i++) {
         float t = cubeIntersect(dir, origin, cubes[i]);
@@ -222,11 +314,12 @@ float BVH(vec3 origin, vec3 dir, Cube cubes[4]) {
 float rayMarch(vec3 rayDir, vec3 cameraOrigin)
 {
     // check for bounding boxes
-    Cube cubes[4];
+    Cube cubes[5];
     cubes[0] = sceneBB();
     cubes[1] = sphereBB();
     cubes[2] = metaCubesBB();
     cubes[3] = torusBB();
+    cubes[4] = flatCynBB();
     if (BVH(cameraOrigin, rayDir, cubes) > 50.0) {
         return 10000.0;
     }
@@ -255,16 +348,56 @@ float rayMarch(vec3 rayDir, vec3 cameraOrigin)
     return totalDist  ;
 }
 
+// calculate normals
+vec3 getNormal(vec3 p) {
+   vec3 normal = normalize(vec3(
+        sceneSDF(vec3(p.x + EPSILON, p.y, p.z)) - sceneSDF(vec3(p.x - EPSILON, p.y, p.z)),
+        sceneSDF(vec3(p.x, p.y + EPSILON, p.z)) - sceneSDF(vec3(p.x, p.y - EPSILON, p.z)),
+        sceneSDF(vec3(p.x, p.y, p.z  + EPSILON)) - sceneSDF(vec3(p.x, p.y, p.z - EPSILON))
+    ));
+    float eps = 0.0001; // or some other value
+     vec2 h = vec2(eps,0);
+    return normalize( vec3(sceneSDF(p+h.xyy) - sceneSDF(p-h.xyy),
+                           sceneSDF(p+h.yxy) - sceneSDF(p-h.yxy),
+                           sceneSDF(p+h.yyx) - sceneSDF(p-h.yyx) ) );
+}
+
+vec3 getShading(vec3 pos , vec3 lightp, vec3 color, vec3 rayDir)
+{
+	vec3 norm = getNormal(pos);
+    vec3 lightdir = normalize(pos - lightp);
+
+    vec3 amb = vec3(0.08);
+    vec3 diffuse = vec3(0.5 * pow(0.5+0.5*dot(norm, -lightdir), 3.0));
+    vec3 phong = vec3(0.8 * pow(max(dot(-rayDir, reflect(lightdir, norm)), 0.0), 20.0));
+
+    return (amb + diffuse + phong) * color;
+}
+
 
 void main() {
 
   vec3 dir = castRay(u_Eye);
+
+
   //vec3 color = 0.5 * (dir + vec3(1.0, 1.0, 1.0));
-  out_Col = vec4(0.5 * (fs_Pos + vec2(1.0)), 0.5 * (sin(u_Time * 3.14159 * 0.01) + 1.0), 1.0);
+  //out_Col = vec4(0.5 * (vec2(1.0)), 0.5 * (sin(u_Time * 3.14159 * 0.01) + 1.0), 1.0);
 
   float t = rayMarch(dir, u_Eye);
   if (t < 50.0){
-    out_Col = vec4(0.0);
+    vec3 light1 = getShading(u_Eye + t * dir, vec3(5.0,10.0,-20.0), vec3(1.0,1.0,1.0), dir);
+    vec3 light2 = getShading(u_Eye + t * dir, vec3(-20,10.0,5.0), vec3(0.5,0.4,0.1), dir);
+    vec3 light3 = getShading(u_Eye + t * dir, vec3(25.0,5.0,-5.0), vec3(0.7,0.3,0.1), dir);
+    vec3 color = light1+light2+light3;
+    out_Col = vec4(color , 1.0);
+  } else {
+     vec3 background = vec3(0.05, 0.03, 0.0);
+    vec3 highlight = vec3(0.98, 0.90, 0.70);
+    float textureMap = worley(fs_Pos.x * 80.0, fs_Pos.y * 60.0 ,2.5 * sin(u_Time / 50.0)) - 0.15 * fbm(fs_Pos.x, fs_Pos.y);
+
+    vec3 backgroundCol = textureMap * (highlight) + (1.0 - textureMap) * (background);
+
+    out_Col = vec4(backgroundCol, 1.0);
   }
   //out_Col = vec4(color, 1.0);
 }
